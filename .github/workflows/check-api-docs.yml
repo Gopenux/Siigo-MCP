@@ -1,0 +1,162 @@
+name: Check Siigo API Documentation Changes
+
+on:
+  schedule:
+    # Ejecutar cada día a las 9:00 AM UTC (4:00 AM Colombia)
+    - cron: '0 9 * * *'
+  workflow_dispatch: # Permite ejecución manual
+
+jobs:
+  check-docs:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      issues: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Download API documentation from Apiary
+        id: download
+        run: |
+          echo "Downloading documentation from Apiary..."
+          curl -s -f "https://siigoapi.docs.apiary.io/api-description-document" -o apiary-docs-current.apib
+
+          if [ ! -s apiary-docs-current.apib ]; then
+            echo "Error: Downloaded file is empty or download failed"
+            exit 1
+          fi
+
+          echo "Documentation downloaded successfully"
+
+      - name: Calculate MD5 hashes
+        id: hash
+        run: |
+          # Hash del archivo descargado de Apiary
+          REMOTE_HASH=$(md5sum apiary-docs-current.apib | cut -d' ' -f1)
+          echo "remote_hash=$REMOTE_HASH" >> $GITHUB_OUTPUT
+          echo "Remote hash: $REMOTE_HASH"
+
+          # Hash del archivo local en el repositorio
+          LOCAL_HASH=$(md5sum siigoapi.apib | cut -d' ' -f1)
+          echo "local_hash=$LOCAL_HASH" >> $GITHUB_OUTPUT
+          echo "Local hash: $LOCAL_HASH"
+
+          # Comparar hashes
+          if [ "$REMOTE_HASH" = "$LOCAL_HASH" ]; then
+            echo "has_changes=false" >> $GITHUB_OUTPUT
+            echo "No changes detected"
+          else
+            echo "has_changes=true" >> $GITHUB_OUTPUT
+            echo "Changes detected!"
+          fi
+
+      - name: Generate diff summary
+        id: diff
+        if: steps.hash.outputs.has_changes == 'true'
+        run: |
+          echo "Generating diff summary..."
+
+          # Generar diff y guardarlo
+          diff -u siigoapi.apib apiary-docs-current.apib > diff-output.txt || true
+
+          # Contar líneas añadidas y eliminadas
+          ADDED=$(grep -c "^+" diff-output.txt || echo "0")
+          REMOVED=$(grep -c "^-" diff-output.txt || echo "0")
+
+          echo "added_lines=$ADDED" >> $GITHUB_OUTPUT
+          echo "removed_lines=$REMOVED" >> $GITHUB_OUTPUT
+
+          # Crear resumen del diff (primeras 100 líneas)
+          DIFF_SUMMARY=$(head -100 diff-output.txt | sed 's/`/\\`/g')
+
+          # Guardar diff en archivo para el issue
+          echo "$DIFF_SUMMARY" > diff-summary.txt
+
+      - name: Create GitHub Issue
+        if: steps.hash.outputs.has_changes == 'true'
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const fs = require('fs');
+
+            const diffSummary = fs.readFileSync('diff-summary.txt', 'utf8');
+            const addedLines = '${{ steps.diff.outputs.added_lines }}';
+            const removedLines = '${{ steps.diff.outputs.removed_lines }}';
+            const remoteHash = '${{ steps.hash.outputs.remote_hash }}';
+            const localHash = '${{ steps.hash.outputs.local_hash }}';
+            const today = new Date().toISOString().split('T')[0];
+
+            const issueBody = `## Cambios detectados en la documentación de Siigo API
+
+            Se han detectado cambios en la documentación oficial de Siigo API en Apiary.
+
+            ### Detalles
+
+            | Campo | Valor |
+            |-------|-------|
+            | Fecha de detección | ${today} |
+            | Hash local (actual) | \`${localHash}\` |
+            | Hash remoto (Apiary) | \`${remoteHash}\` |
+            | Líneas añadidas | ~${addedLines} |
+            | Líneas eliminadas | ~${removedLines} |
+
+            ### Fuente
+            - URL: https://siigoapi.docs.apiary.io/api-description-document
+
+            ### Resumen de cambios (primeras 100 líneas)
+
+            \`\`\`diff
+            ${diffSummary}
+            \`\`\`
+
+            ### Acción requerida
+
+            1. Revisar los cambios en la documentación de Apiary
+            2. Actualizar el archivo \`siigoapi.apib\` en el repositorio si es necesario
+            3. Verificar si los cambios afectan la implementación del MCP Server
+
+            ---
+
+            cc: @jannortiz @carlosdazag @helysm
+
+            > Este issue fue creado automáticamente por GitHub Actions.
+            `;
+
+            await github.rest.issues.create({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              title: `[Docs Update] Cambios detectados en Siigo API - ${today}`,
+              body: issueBody,
+              labels: ['documentation', 'api-changes', 'backlog']
+            });
+
+            console.log('Issue created successfully');
+
+      - name: Update local documentation (optional)
+        if: steps.hash.outputs.has_changes == 'true'
+        run: |
+          echo "New documentation version available."
+          echo "Remote hash: ${{ steps.hash.outputs.remote_hash }}"
+          echo "Local hash: ${{ steps.hash.outputs.local_hash }}"
+          # Si deseas actualizar automáticamente el archivo, descomenta las siguientes líneas:
+          # cp apiary-docs-current.apib siigoapi.apib
+          # git config user.name "github-actions[bot]"
+          # git config user.email "github-actions[bot]@users.noreply.github.com"
+          # git add siigoapi.apib
+          # git commit -m "docs: Auto-update siigoapi.apib from Apiary"
+          # git push
+
+      - name: Summary
+        run: |
+          echo "## Documentation Check Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "| Check | Result |" >> $GITHUB_STEP_SUMMARY
+          echo "|-------|--------|" >> $GITHUB_STEP_SUMMARY
+          echo "| Local Hash | \`${{ steps.hash.outputs.local_hash }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Remote Hash | \`${{ steps.hash.outputs.remote_hash }}\` |" >> $GITHUB_STEP_SUMMARY
+          echo "| Changes Detected | ${{ steps.hash.outputs.has_changes }} |" >> $GITHUB_STEP_SUMMARY

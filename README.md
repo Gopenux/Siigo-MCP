@@ -211,6 +211,31 @@ Una vez configurado, las herramientas de Siigo estaran disponibles en Claude. Pu
 - `siigo_update_webhook` - Actualiza webhook
 - `siigo_delete_webhook` - Elimina webhook
 
+## Monitoreo Automatico de Documentacion
+
+Este repositorio incluye un workflow de GitHub Actions que monitorea automaticamente los cambios en la documentacion oficial de Siigo API en Apiary.
+
+### Como funciona
+
+1. **Ejecucion programada**: El workflow se ejecuta diariamente a las 9:00 AM UTC (4:00 AM hora Colombia)
+2. **Descarga y comparacion**: Descarga la documentacion desde `https://siigoapi.docs.apiary.io/api-description-document` y compara el hash MD5 con el archivo local `siigoapi.apib`
+3. **Notificacion**: Si detecta cambios, crea automaticamente un issue en GitHub con:
+   - Resumen de los cambios (diff)
+   - Menciones a los responsables
+   - Labels: `documentation`, `api-changes`, `backlog`
+
+### Configuracion inicial
+
+1. **Configurar labels**: Ejecuta manualmente el workflow `Setup Repository Labels` para crear las labels necesarias
+
+2. **Menciones configuradas**: El workflow notificara automaticamente a @jannortiz, @carlosdazag y @helysm cuando se detecten cambios.
+
+3. **Ejecucion manual**: Puedes ejecutar el workflow manualmente desde la pestana Actions > "Check Siigo API Documentation Changes" > "Run workflow"
+
+### Archivo de documentacion
+
+El archivo `siigoapi.apib` contiene la copia local de la documentacion de Siigo API en formato API Blueprint. Este archivo se usa como referencia para detectar cambios.
+
 ## Licencia
 
 MIT

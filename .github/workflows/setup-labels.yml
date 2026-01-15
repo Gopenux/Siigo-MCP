@@ -1,0 +1,65 @@
+name: Setup Repository Labels
+
+on:
+  workflow_dispatch: # Solo ejecución manual
+  push:
+    branches:
+      - main
+    paths:
+      - '.github/workflows/setup-labels.yml'
+
+jobs:
+  create-labels:
+    runs-on: ubuntu-latest
+    permissions:
+      issues: write
+
+    steps:
+      - name: Create documentation label
+        uses: actions/github-script@v7
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          script: |
+            const labels = [
+              {
+                name: 'documentation',
+                color: '0075ca',
+                description: 'Improvements or additions to documentation'
+              },
+              {
+                name: 'api-changes',
+                color: 'd93f0b',
+                description: 'Changes detected in Siigo API documentation'
+              },
+              {
+                name: 'backlog',
+                color: 'fbca04',
+                description: 'Items pending review and prioritization'
+              }
+            ];
+
+            for (const label of labels) {
+              try {
+                await github.rest.issues.createLabel({
+                  owner: context.repo.owner,
+                  repo: context.repo.repo,
+                  name: label.name,
+                  color: label.color,
+                  description: label.description
+                });
+                console.log(`Created label: ${label.name}`);
+              } catch (error) {
+                if (error.status === 422) {
+                  console.log(`Label ${label.name} already exists, updating...`);
+                  await github.rest.issues.updateLabel({
+                    owner: context.repo.owner,
+                    repo: context.repo.repo,
+                    name: label.name,
+                    color: label.color,
+                    description: label.description
+                  });
+                } else {
+                  throw error;
+                }
+              }
+            }
