@@ -34,6 +34,14 @@ import {
   UpdateWebhookSchema,
   CreateAccountGroupSchema,
   UpdateAccountGroupSchema,
+  ListProductsSchema,
+  ListCustomersSchema,
+  ListInvoicesSchema,
+  ListQuotationsSchema,
+  ListPurchasesSchema,
+  ListPaymentReceiptsSchema,
+  CreateInvoiceBatchSchema,
+  AccountsPayableSchema,
 } from './validators.js';
 
 // Get credentials from environment variables
@@ -1047,6 +1055,7 @@ async function handleTool(name: string, args: any): Promise<any> {
 
     // Products
     case 'siigo_list_products':
+      validateInput(ListProductsSchema, args);
       return client.listProducts(args);
     case 'siigo_get_product':
       validateInput(ProductIdSchema, args);
@@ -1075,6 +1084,7 @@ async function handleTool(name: string, args: any): Promise<any> {
 
     // Customers
     case 'siigo_list_customers':
+      validateInput(ListCustomersSchema, args);
       return client.listCustomers(args);
     case 'siigo_get_customer':
       validateInput(CustomerIdSchema, args);
@@ -1089,6 +1099,7 @@ async function handleTool(name: string, args: any): Promise<any> {
 
     // Invoices
     case 'siigo_list_invoices':
+      validateInput(ListInvoicesSchema, args);
       return client.listInvoices(args);
     case 'siigo_get_invoice':
       validateInput(InvoiceIdSchema, args);
@@ -1146,6 +1157,7 @@ async function handleTool(name: string, args: any): Promise<any> {
       validateInput(InvoiceIdSchema, args);
       return client.getInvoiceStampErrors(args.id);
     case 'siigo_create_invoice_batch':
+      validateInput(CreateInvoiceBatchSchema, args);
       return client.createInvoiceBatch({
         notification_url: args.callback_url,
         invoices: args.invoices,
@@ -1153,6 +1165,7 @@ async function handleTool(name: string, args: any): Promise<any> {
 
     // Quotations
     case 'siigo_list_quotations':
+      validateInput(ListQuotationsSchema, args);
       return client.listQuotations(args);
     case 'siigo_get_quotation':
       validateInput(QuotationIdSchema, args);
@@ -1214,6 +1227,7 @@ async function handleTool(name: string, args: any): Promise<any> {
 
     // Purchases
     case 'siigo_list_purchases':
+      validateInput(ListPurchasesSchema, args);
       return client.listPurchases(args);
     case 'siigo_get_purchase':
       validateInput(PurchaseIdSchema, args);
@@ -1293,6 +1307,7 @@ async function handleTool(name: string, args: any): Promise<any> {
 
     // Payment Receipts
     case 'siigo_list_payment_receipts':
+      validateInput(ListPaymentReceiptsSchema, args);
       return client.listPaymentReceipts(args);
     case 'siigo_get_payment_receipt':
       validateInput(PaymentReceiptIdSchema, args);
@@ -1357,6 +1372,7 @@ async function handleTool(name: string, args: any): Promise<any> {
       validateInput(TestBalanceReportSchema, args);
       return client.generateTestBalanceByThirdParty(args);
     case 'siigo_accounts_payable':
+      validateInput(AccountsPayableSchema, args);
       return client.getAccountsPayable(args);
 
     // Catalogs

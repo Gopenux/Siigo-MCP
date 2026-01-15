@@ -45,9 +45,15 @@ export const UpdateProductSchema = z.object({
   active: z.boolean().optional(),
   tax_classification: z.enum(['Taxed', 'Exempt', 'Excluded']).optional(),
   taxes: z.array(z.object({ id: z.number() })).optional(),
-  prices: z.array(z.any()).optional(),
+  prices: z.array(z.object({
+    currency_code: z.string(),
+    price_list: z.array(z.object({
+      position: z.number(),
+      value: z.number(),
+    })),
+  })).optional(),
   description: z.string().max(2500).optional(),
-});
+}).strict();
 
 // Customer schemas
 export const CustomerIdSchema = z.object({
@@ -176,7 +182,9 @@ export const CreatePurchaseSchema = z.object({
     value: z.number(),
     due_date: DateSchema.optional(),
   })).min(1, 'At least one payment is required'),
-  retentions: z.array(z.any()).optional(),
+  retentions: z.array(z.object({
+    id: z.number(),
+  })).optional(),
 });
 
 // Voucher schemas
@@ -270,7 +278,7 @@ export const UpdateWebhookSchema = z.object({
   topic: z.string().optional(),
   url: z.string().url().optional(),
   active: z.boolean().optional(),
-});
+}).strict();
 
 // Account Group schemas
 export const AccountGroupIdSchema = z.object({
@@ -286,7 +294,102 @@ export const UpdateAccountGroupSchema = z.object({
   id: PositiveNumber,
   name: z.string().optional(),
   active: z.boolean().optional(),
-});
+}).strict();
+
+// List Products schema
+export const ListProductsSchema = z.object({
+  page: z.number().int().min(1).optional(),
+  page_size: z.number().int().min(1).max(100).optional(),
+  code: z.string().optional(),
+  created_start: DateSchema.optional(),
+  created_end: DateSchema.optional(),
+}).strict();
+
+// List Customers schema
+export const ListCustomersSchema = z.object({
+  page: z.number().int().min(1).optional(),
+  page_size: z.number().int().min(1).max(100).optional(),
+  identification: z.string().optional(),
+  created_start: DateSchema.optional(),
+  created_end: DateSchema.optional(),
+}).strict();
+
+// List Invoices schema
+export const ListInvoicesSchema = z.object({
+  page: z.number().int().min(1).optional(),
+  page_size: z.number().int().min(1).max(100).optional(),
+  customer_identification: z.string().optional(),
+  date_start: DateSchema.optional(),
+  date_end: DateSchema.optional(),
+  document_id: z.number().int().positive().optional(),
+}).strict();
+
+// List Quotations schema
+export const ListQuotationsSchema = z.object({
+  page: z.number().int().min(1).optional(),
+  page_size: z.number().int().min(1).max(100).optional(),
+  customer_identification: z.string().optional(),
+  date_start: DateSchema.optional(),
+  date_end: DateSchema.optional(),
+  document_id: z.number().int().positive().optional(),
+}).strict();
+
+// List Purchases schema
+export const ListPurchasesSchema = z.object({
+  page: z.number().int().min(1).optional(),
+  page_size: z.number().int().min(1).max(100).optional(),
+  supplier_identification: z.string().optional(),
+  date_start: DateSchema.optional(),
+  date_end: DateSchema.optional(),
+  document_id: z.number().int().positive().optional(),
+}).strict();
+
+// List Payment Receipts schema
+export const ListPaymentReceiptsSchema = z.object({
+  page: z.number().int().min(1).optional(),
+  page_size: z.number().int().min(1).max(100).optional(),
+  supplier_identification: z.string().optional(),
+  date_start: DateSchema.optional(),
+  date_end: DateSchema.optional(),
+  document_id: z.number().int().positive().optional(),
+}).strict();
+
+// Invoice Batch schema
+export const CreateInvoiceBatchSchema = z.object({
+  callback_url: z.string().url('Invalid callback URL format'),
+  invoices: z.array(z.object({
+    document_id: PositiveNumber,
+    date: DateSchema,
+    customer_identification: NonEmptyString,
+    customer_branch: z.number().int().min(0).optional(),
+    seller_id: PositiveNumber,
+    stamp_send: z.boolean().optional(),
+    mail_send: z.boolean().optional(),
+    observations: z.string().optional(),
+    items: z.array(z.object({
+      code: NonEmptyString,
+      quantity: PositiveNumber,
+      price: z.number().min(0),
+      discount: z.number().min(0).max(100).optional(),
+      taxes: z.array(z.object({ id: z.number() })).optional(),
+    })).min(1, 'At least one item is required'),
+    payments: z.array(z.object({
+      id: z.number(),
+      value: z.number(),
+      due_date: DateSchema.optional(),
+    })).min(1, 'At least one payment is required'),
+  })).min(1, 'At least one invoice is required'),
+}).strict();
+
+// Accounts Payable schema
+export const AccountsPayableSchema = z.object({
+  page: z.number().int().min(1).optional(),
+  page_size: z.number().int().min(1).max(100).optional(),
+  due_date_start: DateSchema.optional(),
+  due_date_end: DateSchema.optional(),
+  provider_identification: z.string().optional(),
+  provider_branch_office: z.number().int().min(0).optional(),
+}).strict();
 
 // Validation helper function
 export function validateInput<T>(schema: z.ZodSchema<T>, data: unknown): T {
