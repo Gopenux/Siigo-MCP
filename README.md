@@ -5,36 +5,100 @@ Servidor MCP (Model Context Protocol) para integrar la API de Siigo Nube con Cla
 ## Instalacion
 
 ```bash
-cd /Users/gopenux/Documents/mcp_server_siigo
+git clone https://github.com/Gopenux/Siigo-MCP.git
+cd Siigo-MCP
 npm install
 npm run build
 ```
 
 ## Configuracion
 
-### Variables de Entorno
+### Obtener Credenciales de Siigo
 
-Configura las siguientes variables de entorno:
+1. Ingresa a tu cuenta de Siigo Nube
+2. Ve a **Alianzas > Mi Credencial API**
+3. Copia tu `username` (email) y `access_key`
 
-```bash
-export SIIGO_USERNAME="tu_usuario@empresa.com"
-export SIIGO_ACCESS_KEY="tu_access_key_aqui"
-```
+### Configuracion en Claude Code (CLI)
 
-### Configuracion en Claude Desktop
-
-Agrega la siguiente configuracion a tu archivo `claude_desktop_config.json`:
+Agrega la siguiente configuracion a tu archivo `~/.claude/claude_code_config.json`:
 
 ```json
 {
   "mcpServers": {
     "siigo": {
       "command": "node",
-      "args": ["/Users/gopenux/Documents/mcp_server_siigo/dist/index.js"],
+      "args": ["/ruta/a/Siigo-MCP/dist/index.js"],
       "env": {
         "SIIGO_USERNAME": "tu_usuario@empresa.com",
         "SIIGO_ACCESS_KEY": "tu_access_key_aqui"
       }
+    }
+  }
+}
+```
+
+**Ubicacion del archivo de configuracion:**
+- **macOS/Linux:** `~/.claude/claude_code_config.json`
+- **Windows:** `%USERPROFILE%\.claude\claude_code_config.json`
+
+Tambien puedes configurarlo por proyecto creando un archivo `.mcp.json` en la raiz de tu proyecto:
+
+```json
+{
+  "mcpServers": {
+    "siigo": {
+      "command": "node",
+      "args": ["./node_modules/mcp-server-siigo/dist/index.js"],
+      "env": {
+        "SIIGO_USERNAME": "tu_usuario@empresa.com",
+        "SIIGO_ACCESS_KEY": "tu_access_key_aqui"
+      }
+    }
+  }
+}
+```
+
+### Configuracion en Claude Desktop
+
+Agrega la siguiente configuracion a tu archivo `claude_desktop_config.json`:
+
+**Ubicacion del archivo:**
+- **macOS:** `~/Library/Application Support/Claude/claude_desktop_config.json`
+- **Windows:** `%APPDATA%\Claude\claude_desktop_config.json`
+
+```json
+{
+  "mcpServers": {
+    "siigo": {
+      "command": "node",
+      "args": ["/ruta/a/Siigo-MCP/dist/index.js"],
+      "env": {
+        "SIIGO_USERNAME": "tu_usuario@empresa.com",
+        "SIIGO_ACCESS_KEY": "tu_access_key_aqui"
+      }
+    }
+  }
+}
+```
+
+### Variables de Entorno (Alternativa)
+
+Tambien puedes configurar las credenciales como variables de entorno del sistema:
+
+```bash
+export SIIGO_USERNAME="tu_usuario@empresa.com"
+export SIIGO_ACCESS_KEY="tu_access_key_aqui"
+```
+
+Y luego en la configuracion omitir el bloque `env`:
+
+```json
+{
+  "mcpServers": {
+    "siigo": {
+      "command": "node",
+      "args": ["/ruta/a/Siigo-MCP/dist/index.js"]
     }
   }
 }
