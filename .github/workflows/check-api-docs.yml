@@ -130,9 +130,9 @@ jobs:
             await github.rest.issues.create({
               owner: context.repo.owner,
               repo: context.repo.repo,
-              title: `[Docs Update] Cambios detectados en Siigo API - ${today}`,
+              title: `[Bug] Cambios detectados en Siigo API - ${today}`,
               body: issueBody,
-              labels: ['documentation', 'api-changes', 'backlog']
+              labels: ['bug', 'api-changes', 'backlog']
             });
 
             console.log('Issue created successfully');
